@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Internet Speed Test</title>
-<meta name="description" content="Check your internet speed in seconds. Download, upload, latency and jitter. No sign-up, no ads, nothing stored.">
+<meta name="description" content="Check your internet speed in seconds. Download, upload, latency and jitter. No sign-up, no ads, no tracking.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap" rel="stylesheet">
 <style>
@@ -13,7 +13,9 @@
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Figtree",system-ui,sans-serif;display:flex;flex-direction:column}
-nav{padding:20px 28px;font-weight:800;font-size:18px;letter-spacing:-.01em}
+nav{padding:20px 28px;font-weight:800;font-size:18px;letter-spacing:-.01em;display:flex;justify-content:space-between;align-items:center}
+nav select{font:inherit;font-size:14px;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;cursor:pointer}
+nav select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 nav span{color:var(--accent)}
 main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px 20px 56px}
 .kicker{font-size:clamp(16px,2.4vw,22px);color:var(--mute);margin:0 0 6px}
@@ -43,35 +45,51 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 .cell span{font-size:13px;color:var(--mute)}
 .meta{margin-top:14px;font-size:14px;color:var(--mute);display:flex;gap:6px 22px;justify-content:center;flex-wrap:wrap}
 #err{color:#D93025;margin-top:16px;font-size:15px;min-height:20px}
+.notice{display:none;width:min(640px,100%);margin:22px auto 0;padding:12px 16px;border-radius:12px;background:var(--soft);border:1px solid var(--line);color:var(--mute);font-size:14px;line-height:1.5;text-align:left}
+.notice.show{display:block}
+#hist{width:min(640px,100%);margin-top:40px;text-align:left}
+#hist h2{font-size:16px;margin:0;display:flex;justify-content:space-between;align-items:center}
+#hist h2 button{font-size:13px;padding:6px 14px}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:9px 6px;border-bottom:1px solid var(--line);text-align:right}
+th{color:var(--mute);font-weight:500}
+th:first-child,td:first-child{text-align:left}
+.empty{color:var(--mute);font-size:14px;margin:12px 0 0}
 footer{padding:18px 28px;border-top:1px solid var(--line);font-size:13px;color:var(--mute);display:flex;gap:8px 24px;justify-content:space-between;flex-wrap:wrap}
 @media (max-width:520px){.grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<nav>Speed<span>Test</span></nav>
+<nav><div>Speed<span>Test</span></div><select id="lang" aria-label="Language"><option value="en">English</option><option value="ru">Русский</option><option value="uz">Oʻzbekcha</option></select></nav>
 <main id="app">
-  <p class="kicker">Your internet speed is</p>
+  <p class="kicker" data-i="kicker">Your internet speed is</p>
   <div class="speed"><span id="num">0</span><span id="unit">Mbps</span></div>
   <div id="phase" aria-live="polite"><span class="dot"></span><span id="ptext">Starting</span></div>
   <div class="bar" aria-hidden="true"><i id="prog"></i></div>
   <div id="err" role="alert"></div>
+  <div class="notice" id="vpn" role="note"></div>
   <div class="actions">
-    <button class="primary" id="again" disabled>Test again</button>
+    <button class="primary" id="again" data-i="again" disabled>Test again</button>
     <button id="toggle" aria-expanded="false" aria-controls="more">Show more info</button>
+    <button id="share" data-i="share" disabled>Share result</button>
   </div>
   <section id="more" aria-label="Detailed results">
     <div class="grid">
-      <div class="cell"><b id="r-down">–<small>Mbps</small></b><span>Download</span></div>
-      <div class="cell"><b id="r-up">–<small>Mbps</small></b><span>Upload</span></div>
-      <div class="cell"><b id="r-ping">–<small>ms</small></b><span>Latency</span></div>
-      <div class="cell"><b id="r-jit">–<small>ms</small></b><span>Jitter</span></div>
+      <div class="cell"><b id="r-down">–<small>Mbps</small></b><span data-i="download">Download</span></div>
+      <div class="cell"><b id="r-up">–<small>Mbps</small></b><span data-i="upload">Upload</span></div>
+      <div class="cell"><b id="r-ping">–<small>ms</small></b><span data-i="latency">Latency</span></div>
+      <div class="cell"><b id="r-jit">–<small>ms</small></b><span data-i="jitter">Jitter</span></div>
     </div>
     <div class="meta"><span id="m-isp"></span><span id="m-srv"></span></div>
   </section>
+  <section id="hist" aria-label="History">
+    <h2><span data-i="hist">History</span><button id="hclear" data-i="clear">Clear</button></h2>
+    <div id="hbody"></div>
+  </section>
 </main>
 <footer>
-  <span>Nothing is stored or sent to us. Tests run directly between your browser and the test server.</span>
-  <span>Results vary with Wi‑Fi, device load and server distance.</span>
+  <span data-i="f1"></span>
+  <span data-i="f2"></span>
 </footer>
 
 <script>
@@ -79,9 +97,58 @@ const $=id=>document.getElementById(id);
 const BASE="https://speed.cloudflare.com";
 const app=$("app");
 let busy=false;
+const T={
+en:{kicker:"Your internet speed is",again:"Test again",more:"Show more info",less:"Hide more info",share:"Share result",download:"Download",upload:"Upload",latency:"Latency",jitter:"Jitter",network:"Network",server:"Server",starting:"Starting",p_ping:"Checking latency",p_down:"Testing download",p_up:"Testing upload",p_done:"Done",p_stop:"Stopped",err:"The test couldn't finish: ",err2:"Check your connection and try again.",noserver:"Can't reach the test server",f1:"Results are saved only in this browser. Nothing is sent to us. Tests run directly between your browser and the test server.",f2:"Results vary with Wi-Fi, device load and server distance.",vpn:"You seem to be using a VPN, proxy or hosting network. Results may be slower or less stable than your real connection.",hist:"History",clear:"Clear",hempty:"Your past tests appear here.",time:"Time"},
+ru:{kicker:"Ваша скорость интернета",again:"Проверить снова",more:"Подробнее",less:"Скрыть",share:"Поделиться результатом",download:"Загрузка",upload:"Отдача",latency:"Задержка",jitter:"Джиттер",network:"Сеть",server:"Сервер",starting:"Запуск",p_ping:"Проверка задержки",p_down:"Измерение загрузки",p_up:"Измерение отдачи",p_done:"Готово",p_stop:"Остановлено",err:"Не удалось завершить тест: ",err2:"Проверьте соединение и попробуйте снова.",noserver:"Нет связи с тестовым сервером",f1:"Результаты сохраняются только в этом браузере. Нам ничего не отправляется. Тест идёт напрямую между вашим браузером и тестовым сервером.",f2:"Результаты зависят от Wi-Fi, нагрузки устройства и расстояния до сервера.",vpn:"Похоже, вы используете VPN, прокси или хостинг-сеть. Результаты могут быть ниже и менее стабильными, чем у вашего реального соединения.",hist:"История",clear:"Очистить",hempty:"Здесь появятся ваши прошлые тесты.",time:"Время"},
+uz:{kicker:"Internet tezligingiz",again:"Qayta tekshirish",more:"Batafsil",less:"Yashirish",share:"Natijani ulashish",download:"Yuklab olish",upload:"Yuklash",latency:"Kechikish",jitter:"Jitter",network:"Tarmoq",server:"Server",starting:"Boshlanmoqda",p_ping:"Kechikish tekshirilmoqda",p_down:"Yuklab olish tezligi o'lchanmoqda",p_up:"Yuklash tezligi o'lchanmoqda",p_done:"Tayyor",p_stop:"To'xtatildi",err:"Testni yakunlab bo'lmadi: ",err2:"Ulanishni tekshirib, qayta urinib ko'ring.",noserver:"Test serveriga ulanib bo'lmadi",f1:"Natijalar faqat shu brauzerda saqlanadi. Bizga hech narsa yuborilmaydi. Test brauzeringiz va test serveri o'rtasida to'g'ridan-to'g'ri o'tadi.",f2:"Natijalar Wi-Fi, qurilma yuklamasi va server masofasiga qarab o'zgaradi.",vpn:"Siz VPN, proksi yoki xosting tarmog'idan foydalanayotganga o'xshaysiz. Natijalar haqiqiy ulanishingizdan sekinroq yoki beqarorroq bo'lishi mumkin.",hist:"Tarix",clear:"Tozalash",hempty:"Oldingi testlar shu yerda ko'rinadi.",time:"Vaqt"}};
+let lang=(()=>{try{const s=localStorage.getItem("spd_lang");if(s&&T[s])return s}catch(e){}const n=(navigator.language||"en").slice(0,2);return T[n]?n:"en"})();
+const tr=k=>(T[lang]&&T[lang][k])||T.en[k]||k;
+let curPhase="starting",errD=null,metaD={},last=null,hist=[];
+const VPN=/datacamp|cdn77|vpn|proxy|hosting|m247|digitalocean|amazon|aws|google cloud|ovh|hetzner|linode|vultr|choopa|leaseweb|nord|mullvad|proton|surfshark|clouvider|zenlayer|colocrossing/i;
+try{hist=JSON.parse(localStorage.getItem("spd_hist")||"[]")}catch(e){}
+const saveHist=()=>{try{localStorage.setItem("spd_hist",JSON.stringify(hist.slice(-30)))}catch(e){}};
+function addHist(r){hist.push({t:Date.now(),d:r.d,u:r.u,p:r.p});saveHist();renderHist()}
+function renderHist(){
+  const h=hist.slice(-8).reverse();
+  $("hbody").innerHTML=h.length?`<table><thead><tr><th>${tr("time")}</th><th>${tr("download")}</th><th>${tr("upload")}</th><th>${tr("latency")}</th></tr></thead><tbody>${h.map(x=>`<tr><td>${new Date(x.t).toLocaleString(lang,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</td><td>${fmt(x.d)}</td><td>${fmt(x.u)}</td><td>${Math.round(x.p)} ms</td></tr>`).join("")}</tbody></table>`:`<p class="empty">${tr("hempty")}</p>`;
+}
+function renderMeta(){
+  $("m-isp").textContent=metaD.org?tr("network")+": "+metaD.org:"";
+  $("m-srv").textContent=metaD.srv?tr("server")+": "+metaD.srv+(metaD.cc?", "+metaD.cc:""):"";
+  $("vpn").className="notice"+(VPN.test(metaD.org||"")?" show":"");
+  $("vpn").textContent=tr("vpn");
+}
+function renderErr(){$("err").textContent=errD?tr("err")+errD+". "+tr("err2"):""}
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll("[data-i]").forEach(e=>e.textContent=tr(e.dataset.i));
+  $("ptext").textContent=tr(curPhase);
+  $("toggle").textContent=tr($("more").classList.contains("open")?"less":"more");
+  renderMeta();renderErr();renderHist();
+}
+function share(){
+  if(!last)return;
+  const c=document.createElement("canvas");c.width=1200;c.height=630;const x=c.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,1200,630);x.fillStyle="#0A6CFF";x.fillRect(0,0,1200,10);
+  x.textAlign="center";const F="Figtree,system-ui,sans-serif";
+  x.fillStyle="#6B7480";x.font="500 34px "+F;x.fillText(tr("kicker"),600,100);
+  x.fillStyle="#111418";x.font="800 230px "+F;x.fillText(fmt(last.d),600,320);
+  x.fillStyle="#6B7480";x.font="500 38px "+F;x.fillText("Mbps",600,380);
+  [[fmt(last.d),"download"],[fmt(last.u),"upload"],[Math.round(last.p)+" ms","latency"],[last.j.toFixed(1)+" ms","jitter"]].forEach((r,i)=>{
+    const cx=210+i*260;x.fillStyle="#111418";x.font="800 44px "+F;x.fillText(r[0],cx,486);
+    x.fillStyle="#6B7480";x.font="500 26px "+F;x.fillText(tr(r[1]),cx,528);
+  });
+  x.font="500 24px "+F;x.fillText(location.host+location.pathname,600,596);
+  c.toBlob(async b=>{
+    const f=new File([b],"speed-test.png",{type:"image/png"});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});return}catch(e){if(e.name==="AbortError")return}}
+    const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="speed-test.png";a.click();
+  },"image/png");
+}
+
 const fmt=n=>n>=100?String(Math.round(n)):n>=10?n.toFixed(0):n.toFixed(1);
 const setBig=v=>$("num").textContent=fmt(v);
-const setPhase=(t,p)=>{$("ptext").textContent=t;$("prog").style.width=p+"%"};
+const setPhase=(k,p)=>{curPhase=k;$("ptext").textContent=tr(k);$("prog").style.width=p+"%"};
 const cell=(id,v,u)=>$(id).innerHTML=v+"<small>"+u+"</small>";
 
 // Ping + jitter
@@ -91,7 +158,7 @@ async function latency(n=12){
     const s=performance.now();
     try{await fetch(`${BASE}/__down?bytes=0&r=${Math.random()}`,{cache:"no-store"});t.push(performance.now()-s)}catch(e){}
   }
-  if(!t.length)throw new Error("Can't reach the test server");
+  if(!t.length)throw new Error(tr("noserver"));
   const sorted=[...t].sort((a,b)=>a-b);
   const jit=t.slice(1).reduce((a,x,i)=>a+Math.abs(x-t[i]),0)/Math.max(1,t.length-1);
   return{ping:sorted[Math.floor(sorted.length/2)],jitter:jit};
@@ -113,7 +180,7 @@ async function download(ms=8000,streams=4){
         if(mark===null&&el>1000){mark=el;markBytes=bytes}
         if(mark!==null&&el-last>150){
           last=el;setBig((bytes-markBytes)*8/1e6/((el-mark)/1000));
-          setPhase("Testing download",10+Math.min(50,el/ms*50));
+          setPhase("p_down",10+Math.min(50,el/ms*50));
         }
       }
     }
@@ -135,7 +202,7 @@ async function upload(ms=6000,streams=3){
       bytes+=2e6;
       const el=performance.now()-t0;
       setBig(bytes*8/1e6/(el/1000));
-      setPhase("Testing upload",62+Math.min(33,el/ms*33));
+      setPhase("p_up",62+Math.min(33,el/ms*33));
     }
   };
   await Promise.all(Array.from({length:streams},worker));
@@ -145,35 +212,35 @@ async function upload(ms=6000,streams=3){
 async function meta(){
   try{
     const m=await (await fetch(`${BASE}/meta`,{cache:"no-store"})).json();
-    $("m-isp").textContent=m.asOrganization?"Network: "+m.asOrganization:"";
     const c=m.colo&&typeof m.colo==="object"?(m.colo.city||m.colo.iata):m.colo;
-    $("m-srv").textContent=c?"Server: "+c+(m.country?", "+m.country:""):"";
+    metaD={org:m.asOrganization||"",srv:c||"",cc:m.country||""};renderMeta();
   }catch(e){}
 }
 
 async function run(){
   if(busy)return;busy=true;
-  app.className="running";$("again").disabled=true;$("err").textContent="";
-  setBig(0);setPhase("Checking latency",3);
+  app.className="running";$("again").disabled=true;$("share").disabled=true;errD=null;renderErr();
+  setBig(0);setPhase("p_ping",3);
   try{
     meta();
     const l=await latency();cell("r-ping",Math.round(l.ping),"ms");cell("r-jit",l.jitter.toFixed(1),"ms");
     const d=await download();cell("r-down",fmt(d),"Mbps");setBig(d);
     const u=await upload();cell("r-up",fmt(u),"Mbps");
-    setBig(d);setPhase("Done",100);app.className="done";
+    setBig(d);setPhase("p_done",100);app.className="done";last={d,u,p:l.ping,j:l.jitter};addHist(last);$("share").disabled=false;
   }catch(e){
-    app.className="";$("err").textContent="The test couldn't finish: "+e.message+". Check your connection and try again.";
-    setPhase("Stopped",0);
+    app.className="";errD=e.message;renderErr();
+    setPhase("p_stop",0);
   }
   busy=false;$("again").disabled=false;
 }
 
 $("again").onclick=run;
-$("toggle").onclick=()=>{
-  const o=$("more").classList.toggle("open");
-  $("toggle").setAttribute("aria-expanded",o);
-  $("toggle").textContent=o?"Hide more info":"Show more info";
-};
+$("toggle").onclick=()=>{const o=$("more").classList.toggle("open");$("toggle").setAttribute("aria-expanded",o);applyLang()};
+$("share").onclick=share;
+$("hclear").onclick=()=>{hist=[];saveHist();renderHist()};
+$("lang").value=lang;
+$("lang").onchange=()=>{lang=$("lang").value;try{localStorage.setItem("spd_lang",lang)}catch(e){}applyLang()};
+applyLang();
 run();
 </script>
 </body>
