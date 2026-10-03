@@ -146,7 +146,8 @@ async function meta(){
   try{
     const m=await (await fetch(`${BASE}/meta`,{cache:"no-store"})).json();
     $("m-isp").textContent=m.asOrganization?"Network: "+m.asOrganization:"";
-    $("m-srv").textContent=m.colo?"Server: "+m.colo+(m.country?", "+m.country:""):"";
+    const c=m.colo&&typeof m.colo==="object"?(m.colo.city||m.colo.iata):m.colo;
+    $("m-srv").textContent=c?"Server: "+c+(m.country?", "+m.country:""):"";
   }catch(e){}
 }
 
